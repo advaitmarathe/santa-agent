@@ -148,10 +148,7 @@ Legend: **V** = vendor claim, **M** = measured by a third party (Anam's Oct 16, 
 
 **Consent and rights for a synthetic Santa**
 - No performer means no AB 2602 replica contract, no SAG-AFTRA terms and no exclusivity clause.
-- **Open questions for vendors (ask Nov 6, in writing):**
-  - Do they accept a fully synthetic face?
-  - What replaces the subject-consent clip?
-  - Is "Santa" treated as a copyrighted character? He's a public-domain folk figure, so it shouldn't be (**U**).
+- **No vendor conversations.** We read each vendor's public terms and find out by doing: on day 1, upload the generated Santa to each self-serve flow. Whoever accepts a synthetic face (and "Santa", a public-domain folk figure) without a consent clip stays in the bake-off; whoever doesn't is dropped (**U**).
 - Check that the image model's licence grants us commercial ownership of the output.
 - **Disclosure:** tell parents Santa is an AI-generated character. The same applies to marketing videos made with the avatar.
 
@@ -183,10 +180,10 @@ Legend: **V** = vendor claim, **M** = measured by a third party (Anam's Oct 16, 
 ## 5. Scaling for the Christmas Eve spike
 
 1. **Capacity forecast.** Model peak concurrency from the sales forecast: for example, 50k bookings on Dec 24 × 5-minute calls, concentrated in 17:00–20:00 local across 4 US time zones, gives a peak of about **3–5k concurrent sessions** *(illustrative, replace with real numbers)*. Bookings let us shape demand: **sell time slots**, not on-demand calls. This is the single most effective scaling control.
-2. **Contracts (this week).**
-   - Sign **enterprise agreements with both Tavus and Anam**, each with a *written* concurrency reservation of at least 60% of forecast peak, a Dec 20–26 burst SLA, a named on-call engineer, and the session cap removed (self-serve Tavus caps conversations at 10–60 min).
-   - Add HeyGen LiveAvatar (Business or Enterprise; "unlimited concurrency" claimed) as overflow.
-   - Ask each vendor for its *GPU region list* and target US-East and US-West.
+2. **Self-serve capacity (no contracts).**
+   - Use the highest self-serve plan on Tavus, Anam and HeyGen (HeyGen claims "unlimited concurrency" on paid plans). Self-serve Tavus caps concurrent streams (about 3–15) and conversation length (10–60 min), so it can't carry peak alone.
+   - Spread calls across all three vendors, and open multiple accounts per vendor only if their terms allow it.
+   - Cap bookings per time slot at the concurrency our load test proves we can sustain. Sell out rather than oversell.
 3. **Routing.**
    - A session router picks the vendor per call from: health (error rate in the last 5 min), live concurrency against the reservation, and the region.
    - Pin each child to one vendor for the whole call; never switch Santa's face mid-call.
@@ -248,7 +245,7 @@ Legend: **V** = vendor claim, **M** = measured by a third party (Anam's Oct 16, 
    - time to first frame;
    - error and reconnect rate.
 3. **Day 4–5.** Show blinded clips to about 20 parents, ideally with kids, and rate realism, warmth, beard quality, listening liveliness and creepiness. Kids are the toughest critics of the uncanny valley.
-4. **Day 5.** Ask vendors for written answers on: reserved concurrency for Dec 20–26, data retention of our Santa audio, use of the data for training (we opt out), child-audience acceptability, and portrait support.
+4. **Day 5.** From each vendor's public docs and dashboard (no outreach): concurrency limits on our plan, data retention and training opt-out settings (turn them off), child-audience terms, and portrait support (test it).
 5. **Decision on Nov 14.** Primary = the best realism among vendors that meet the p95 avatar-stage limit of 250 ms and the 200 ms interruption limit. Secondary = the next best.
 6. **Nov 6–8.** Generate the Santa asset (§4.2), with the optional reference video if the image path looks stiff. **Nov 15–20.** Train production faces on two or three vendors.
    - Tavus 4.5 tuning takes a few hours.
@@ -260,8 +257,8 @@ Legend: **V** = vendor claim, **M** = measured by a third party (Anam's Oct 16, 
 ## 8. Child, policy and privacy considerations specific to the avatar layer
 
 - **Data minimization.** With our agent in the middle, vendors receive only Santa's synthetic audio and return Santa's video. **Do not enable vendor perception features** (Tavus Raven, D-ID's camera layer) that would send the child's camera feed to a vendor. If the child's camera is on at all, it should be optional and processed only by us, or not at all.
-- **COPPA.** The amended rule is fully in effect (compliance date 2026-04-22). It bars using children's data to train AI as a condition of service. Get each vendor to agree in writing that no child data reaches it; if any does, it must not be retained or used for training.
-- **Vendor terms.** Tavus's ToS make *us* responsible for use by minors. Its AUP has zero tolerance for content that exploits or harms minors, which our use does not do, but **get written confirmation from each vendor that a child-directed, parent-consented product is permitted** *(U for all vendors)*.
+- **COPPA.** The amended rule is fully in effect (compliance date 2026-04-22). It bars using children's data to train AI as a condition of service. Our architecture guarantees no child data reaches the avatar vendor: it only receives Santa's generated audio.
+- **Vendor terms.** Tavus's ToS make *us* responsible for use by minors. Its AUP has zero tolerance for content that exploits or harms minors, which our use does not do, but **read each vendor's terms for child-directed use before launch** *(U for all vendors)*.
 - **Disclosure.** Tell parents clearly that Santa is an AI-generated character. Some jurisdictions now require synthetic-performer disclosure in *advertising* (NY from 2026-06-09; CA SB 1050 from 2027-01-01, *U*). Apply the same disclosure to marketing videos made with the avatar.
 - **Vendor-side moderation.** Some vendors filter content in their own pipeline. Confirm that Santa saying words like "naughty", "chimney" or "sneak" does not trigger vendor-side filters that would mute the avatar (*U*).
 
@@ -271,15 +268,15 @@ Legend: **V** = vendor claim, **M** = measured by a third party (Anam's Oct 16, 
 
 | # | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
-| 1 | Vendor capacity collapses on Dec 24 (GPU shortage, an outage) | Med | Critical | Reserved concurrency in writing; three vendors behind LiveKit; booked time slots; Elf waiting room |
+| 1 | Vendor capacity collapses on Dec 24 (GPU shortage, an outage) | Med | Critical | Three vendors behind LiveKit; booking caps per slot from our load test; Elf waiting room; audio-only fallback |
 | 2 | The beard renders badly (smearing, mouth hidden, flicker) | Med | High | Test on day 1; generate candidates with visible lips; try both the image and the generated-video paths |
 | 3 | Real turn latency is far above vendor claims (e.g., Tavus's 5 s time to first frame suggests heavier infrastructure) | Med | High | Bake-off with glass-to-glass measurement; backchannel cues; pick the vendor on measured p95 |
 | 4 | Interruption feels sluggish because the vendor buffers too much audio | Med | Med | Clause-level TTS chunks; measure the clear_buffer → stop time; choose the vendor on it |
 | 5 | Vendor ships a model change in December (behaviour or quality drift) | Med | High | Pin model versions (e.g., Phoenix-4.5 Pro face IDs); contractual change freeze Dec 1–Jan 2 |
 | 6 | Vendor discontinues a product (Decart retired its avatar models 2026-05) | Low-Med | High | Multi-vendor abstraction; keep the master Santa footage under our own ownership |
 | 7 | Echo: Santa's voice from the phone speaker triggers barge-in | High (on phones) | Med | Browser AEC; a minimum barge-in duration; tests on device |
-| 8 | A vendor refuses the Santa likeness or the child audience under its policy | Low-Med | High | Ask in writing on Nov 6; test all three vendors on day 1 |
-| 9 | A vendor rejects a fully synthetic face, or demands a consent clip that a synthetic person can't give | Med | High | Ask in writing on Nov 6. Test all three vendors on the image path on day 1. Keep the reference-video option ready |
+| 8 | A vendor refuses the Santa likeness or the child audience under its policy | Low-Med | High | Test all three vendors on day 1; drop any that refuse |
+| 9 | A vendor rejects a fully synthetic face, or demands a consent clip that a synthetic person can't give | Med | High | Test all three vendors on the image path on day 1. Keep the reference-video option ready |
 | 10 | Mobile autoplay or Low Power Mode breaks the first impression | Med | Med | A "Tap to call Santa" gesture; QA matrix of iOS 17–19 and Android 13–16 |
 | 11 | Santa looks different across vendors | Med | Low-Med | Same master footage; pin each family to one vendor |
 | 12 | Uncanny valley scares younger kids (3–4) | Low-Med | High | Parent and kid panel testing; warm lighting; mid-shot framing (not an extreme close-up); a softer emotion palette |

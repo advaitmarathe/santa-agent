@@ -77,7 +77,7 @@ Legend: **[V]** = vendor-stated figure, not independently verified. **[U]** = un
   - **Cost:** some latency [U].
   - **Pre-build:** this is the **pre-approved Plan B**.
 - **Full S2S (GPT-Live or Gemini Live):** only if all three hold:
-  - (a) a custom Santa voice is confirmed in writing for our account;
+  - (a) a custom Santa voice is available self-serve on our account;
   - (b) our cascade cannot get below about 1.3 s p50 after tuning;
   - (c) legal accepts post-hoc audio cut-off as the output guardrail. With (c) unlikely, we do not expect to take this path for launch.
 - **ElevenLabs Agents (managed cascade):** an emergency fallback platform if our orchestration layer itself fails (§5). It reuses the same designed Santa voice.
@@ -473,7 +473,7 @@ Delivered in the app, plus an email notification without content. Retention per 
 | **W1 (Nov 5-12)** | Generate the Santa voice with ElevenLabs Voice Design (pick by parent-panel vote), then build the matched Cartesia voice. Child-speech ASR eval (§1.5). LiveKit Agents skeleton with the full cascade. Avatar interface contract with the avatar team (PCM format, clear/interrupt, listening-cue API, region). Legal kickoff on §3.8 and §4.4-4.5 |
 | **W2** | Prompt v1 plus orchestrator state machine; silence ladder; multi-kid. Gates A and B, safe-line library rendered. Latency tuning (eager EOT, hedging, caching). Parent monitor UI |
 | **W3** | Red-team at scale; classifier v2; failover drills (pull each vendor); staff-family pilot calls (50+); legal sign-off on disclosure, VPC and retention |
-| **W4 (to ~Dec 3)** | Load test; capacity reservations; runbooks; soft launch to a waitlist; launch |
+| **W4 (to ~Dec 3)** | Load test; set booking caps from it; runbooks; soft launch to a waitlist; launch |
 
 ---
 
@@ -483,7 +483,7 @@ Delivered in the app, plus an email notification without content. Retention per 
 2. **Avatar latency and interrupt support.** Our budget assumes 150 to 250 ms audio→video and a working "clear" command. Simli startup was observed at 3.4 to 3.6 s in one Pipecat test ([WebRTC.ventures](https://webrtc.ventures/2026/10/real-time-ai-avatar-pipecat-interruption-comparison/)), so the greeting may need to be pre-rendered video.
 3. **AI-disclosure posture with children [L].** It is a product-defining decision; see §3.8.
 4. **Parent as alleged abuser [L].** See §4.5.
-5. **Vendor capacity in December.** Mitigated by reservations and the twin-vendor design.
+5. **Vendor capacity in December.** Mitigated by the twin-vendor design and booking caps per slot.
 6. **Voice rights.** Confirm ElevenLabs Voice Design output is ours to use commercially and exclusively, and whether its terms allow cloning those samples onto Cartesia.
 
 ---

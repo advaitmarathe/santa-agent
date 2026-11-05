@@ -13,7 +13,7 @@
 | Launch geography | **US only for the Dec 2026 launch.** UK in phase 2, after VAT registration and AADC review. EU later, through a merchant of record (MoR). |
 | Pricing model | One-time purchases with no auto-renewal. Three call tiers plus add-ons, gift cards, and a 3-call "North Pole Pass". |
 | COPPA consent | Use the **card payment as the verifiable parental consent (VPC) method** (16 CFR 312.5(b)(2)(ii), as amended in 2025), plus a direct notice and an explicit consent checkbox. Gifted calls require a separate parent VPC at redemption. |
-| Risk | Contact Stripe this week with a volume forecast. Enable 3DS and Radar rules. Keep session evidence for disputes. Use an automated redo-or-refund policy for technical failures. |
+| Risk | Enable 3DS and Radar rules. Keep session evidence for disputes. Use an automated redo-or-refund policy for technical failures. |
 
 ---
 
@@ -149,12 +149,7 @@ Implementation notes:
 
 ## 4. Fraud, chargebacks, and Stripe risk
 
-- **Get pre-approved now.** Contact Stripe (support, or sales if expected volume exceeds ~$250K) with:
-  - Business description and the product's kid-safety posture.
-  - Expected volume curve: ramp from Nov 27, peak Dec 18–24.
-  - Expected average order value (~$30) and refund policy.
-
-  Ask about payout schedule, reserves, and whether Stripe will pre-clear the spike. Third-party sources say notifying Stripe before a seasonal surge helps avoid holds, and that new accounts have a 7–14 day first-payout delay. Both are unverified [U]. **Fund launch costs (GPU, marketing) from capital, not December payouts. Assume payouts could be held until January.**
+- **No Stripe outreach.** Fill in the account's business description fully (including the kid-safety posture and refund policy) so automated risk review has context. New accounts reportedly have a 7–14 day first-payout delay, and a sudden spike can trigger a hold [U]. **Fund launch costs (GPU, marketing) from capital, not December payouts. Assume payouts could be held until January.**
 - **Expected risk profile:**
   - Low order value and digital delivery attract **card testing**: bots trying stolen cards on the $14.99 SKU.
   - **Friendly fraud** (a spouse doesn't recognise the charge, or a parent claims the call didn't happen).
@@ -306,7 +301,7 @@ Key invariants:
 
 | By | Item |
 |---|---|
-| Nov 9 | Stripe account in production; contact Stripe risk/support with the forecast; enable Apple Pay domain verification, Google Pay, and Link |
+| Nov 9 | Stripe account in production; enable Apple Pay domain verification, Google Pay, and Link |
 | Nov 12 | Products and prices in Stripe; Checkout plus webhooks; Radar rules; statement descriptor |
 | Nov 16 | COPPA direct notice, privacy policy, ToS, and refund policy reviewed by counsel; AI-disclosure script approved |
 | Nov 20 | Entitlement and join-token service; metering; auto-failure classification; refund automation |

@@ -42,7 +42,7 @@ Most latency figures are vendor claims. Each doc marks what it could not verify.
   - Generate a photoreal Santa still with the workshop baked into the background. Pick one by parent vote; that face is ours.
   - Feed it to Tavus, Anam and HeyGen through their image-to-avatar paths, so failover shows the same Santa.
   - If the image path looks stiff, animate the still into a ~2 min generated reference video and use the vendors' video path instead.
-  - Open question: whether each vendor accepts a fully synthetic face. Ask in writing on Nov 6.
+  - Open question: whether each vendor's self-serve flow accepts a fully synthetic face. We find out by uploading it on day 1.
 - ⚠️ Tavus also runs its own free consumer AI Santa, so it is a supplier and a competitor at once. Factor that into the bake-off and the contract (data use, exclusivity of our Santa face).
 
 ### 3. Payments: Stripe, web app, one-time prices
@@ -101,7 +101,7 @@ The two plans give slightly different totals: the avatar plan expects about 0.8 
 
 ## Biggest risks
 1. **Understanding small children.** Off-the-shelf speech recognition makes very many errors on preschoolers (published figures as high as 70%+). Week-1 test on consented recordings of staff families' children.
-2. **Capacity on Christmas Eve.** Get written concurrency reservations from Tavus and Anam for Dec 20–26.
+2. **Capacity on Christmas Eve.** No vendor talks; we rely on self-serve plans. Spread calls across Tavus, Anam and HeyGen, cap bookings per slot at what our load test sustains, and fall back to audio-only Santa if every avatar vendor is saturated.
 3. **Breaking the Santa magic, or the opposite: AI disclosure law.** California SB 243 and the EU AI Act may require disclosing that the user is talking to an AI.
    - Plan: disclose clearly to the parent.
    - The parent picks "magic" or "gently honest" mode for the child.
@@ -117,7 +117,7 @@ The two plans give slightly different totals: the avatar plan expects about 0.8 
 
 | Dates | Milestone |
 |---|---|
-| Nov 5–8 | Generate the Santa face, workshop scene and voice (no actor, no set). Contact Stripe with a volume forecast. Open enterprise talks with Tavus, Anam, ElevenLabs and Cartesia, including whether they accept a synthetic face. |
+| Nov 5–8 | Generate the Santa face, workshop scene and voice (no actor, no set). Sign up self-serve for every vendor (LiveKit, Deepgram, Anthropic, ElevenLabs, Cartesia, Tavus, Anam, HeyGen, Stripe). |
 | Nov 9–13 | Two bake-offs: speech-to-text on child speech; avatars (Tavus, Anam, HeyGen) on measured end-to-end p95 latency, interruption stop time and parent-panel realism ratings. Generated reference video, if the image path looks stiff. |
 | **Nov 14** | **Lock vendors.** |
 | Nov 14–24 | Build the full pipeline, guardrails, parent dashboard and Stripe booking flow. Run safety red-teaming. |
