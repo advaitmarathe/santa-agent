@@ -20,7 +20,7 @@ Most latency figures are vendor claims. Each doc marks what it could not verify.
 ### 1. Voice: a cascade pipeline, not speech-to-speech
 **Use a streaming cascade:** speech-to-text → LLM → text-to-speech. Don't use OpenAI GPT-Live or Gemini Live end to end.
 
-- **A custom Santa voice.** The speech-to-speech models either don't offer custom voices, restrict them, or forbid imitating characters. ElevenLabs and Cartesia let us clone a hired Santa voice actor.
+- **A custom Santa voice.** The speech-to-speech models either don't offer custom voices, restrict them, or forbid imitating characters. ElevenLabs Voice Design lets us generate our own Santa voice from a text description, and Cartesia can match it.
 - **Guardrails.** A cascade lets us check every phrase *before* Santa says it, which is non-negotiable for 3–10 year-olds. Speech-to-speech can't do this.
 - **Small latency cost.** GPT-Live claims about 0.8 s. Our cascade targets about 0.85 s (p50) to first audio.
 - **Plan B:** if the week-1 test shows audio-native models understand small children much better, use one as the "ears + brain" that outputs text. Our own voice and safety check stay in place.
@@ -30,7 +30,7 @@ Most latency figures are vendor claims. Each doc marks what it could not verify.
 | Transport | LiveKit Agents, all stages in AWS us-east-1 | — |
 | Speech-to-text + turn detection | Deepgram Flux | AssemblyAI Universal / Cartesia Ink |
 | LLM | Claude Haiku 5.5, thinking off, prompt caching, sent to Anthropic API and Bedrock at once | Gemini Flash-class |
-| Voice | ElevenLabs Turbo/Flash, Santa actor clone | Cartesia Sonic, clone of the same actor |
+| Voice | ElevenLabs Turbo/Flash, Santa voice we design ourselves (Voice Design, no actor) | Cartesia Sonic, matched voice |
 
 ### 2. Avatar: Tavus primary, Anam hot fallback. Decart is out
 - **Decart** retired its avatar and lip-sync products in May 2026. Its Lucy model only transforms a live camera feed, which would need a human Santa on every call.
@@ -38,7 +38,11 @@ Most latency figures are vendor claims. Each doc marks what it could not verify.
 - **Fallback: Anam Cara-4.1.** It had the best measured connection time and has an explicit stop command for interruptions.
 - **Overflow: HeyGen LiveAvatar.**
 - **How it connects:** the avatar only receives Santa's generated audio and never sees or hears the child. That matters for privacy rules.
-- **Building Santa:** film a professional Santa with a real beard once, on a North Pole set. The footage trains every vendor. He needs a likeness contract reviewed by a lawyer.
+- **Building Santa: fully AI-generated, no actor, no set.**
+  - Generate a photoreal Santa still with the workshop baked into the background. Pick one by parent vote; that face is ours.
+  - Feed it to Tavus, Anam and HeyGen through their image-to-avatar paths, so failover shows the same Santa.
+  - If the image path looks stiff, animate the still into a ~2 min generated reference video and use the vendors' video path instead.
+  - Open question: whether each vendor accepts a fully synthetic face. Ask in writing on Nov 6.
 - ⚠️ Tavus also runs its own free consumer AI Santa, so it is a supplier and a competitor at once. Factor that into the bake-off and the contract (data use, exclusivity of our Santa face).
 
 ### 3. Payments: Stripe, web app, one-time prices
@@ -113,8 +117,8 @@ The two plans give slightly different totals: the avatar plan expects about 0.8 
 
 | Dates | Milestone |
 |---|---|
-| Nov 5–7 | Hire Santa actor (likeness + voice contract via counsel). Contact Stripe with a volume forecast. Open enterprise talks with Tavus, Anam, ElevenLabs and Cartesia. |
-| Nov 9–13 | Two bake-offs: speech-to-text on child speech; avatars (Tavus, Anam, HeyGen) on measured end-to-end p95 latency, interruption stop time and parent-panel realism ratings. Film the Santa footage and record the voice. |
+| Nov 5–8 | Generate the Santa face, workshop scene and voice (no actor, no set). Contact Stripe with a volume forecast. Open enterprise talks with Tavus, Anam, ElevenLabs and Cartesia, including whether they accept a synthetic face. |
+| Nov 9–13 | Two bake-offs: speech-to-text on child speech; avatars (Tavus, Anam, HeyGen) on measured end-to-end p95 latency, interruption stop time and parent-panel realism ratings. Generated reference video, if the image path looks stiff. |
 | **Nov 14** | **Lock vendors.** |
 | Nov 14–24 | Build the full pipeline, guardrails, parent dashboard and Stripe booking flow. Run safety red-teaming. |
 | Nov 25 | Closed beta with friends and family. |
@@ -125,4 +129,3 @@ The two plans give slightly different totals: the avatar plan expects about 0.8 
 - How Santa answers "Are you real?" (magic vs gently honest default) — with legal.
 - Escalation policy for distress disclosures.
 - US-only launch, or add UK/EU (adds VAT, the UK Children's Code and EU AI Act work)?
-- Approve hiring a Santa actor (photoreal likeness) over a fully AI-generated Santa face.

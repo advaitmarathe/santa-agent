@@ -10,7 +10,7 @@
 
 | | Choice | Why |
 |---|---|---|
-| **Primary** | **Tavus Phoenix-4.5**: custom Santa face trained from footage of a real actor, run in **LiveKit mode** (our agent owns speech-to-text, the LLM, TTS and safety; Tavus only renders) | Fastest audio→video figure claimed by any vendor (134 ms); built-in active listening and micro-expressions; emotion control; a first-party LiveKit plugin; a custom face from video. |
+| **Primary** | **Tavus Phoenix-4.5**: custom Santa face built from our own AI-generated Santa image, run in **LiveKit mode** (our agent owns speech-to-text, the LLM, TTS and safety; Tavus only renders) | Fastest audio→video figure claimed by any vendor (134 ms); built-in active listening and micro-expressions; emotion control; a first-party LiveKit plugin; a custom face from an image or video. |
 | **Hot fallback** | **Anam Cara-4.1 Express**: custom Santa avatar made from the same footage, behind the same LiveKit abstraction | Best *measured* connection time (median 1.42 s, P95 2.97 s) and turn latency (median 1.24 s, full pipeline) in the only cross-vendor benchmark; audio-passthrough mode with explicit `interruptPersona()`; 25 fps at 1152×768, portrait supported. |
 | **Overflow / tertiary** | **HeyGen LiveAvatar**, "Avatar Only" (bring-your-own voice stack) | Advertises "unlimited concurrency" on paid plans plus dedicated enterprise capacity. Useful if Tavus or Anam capacity runs out on Christmas Eve. |
 | **Not recommended for launch** | Decart, Unreal MetaHuman + Pixel Streaming, NVIDIA ACE, Runway Characters, Hedra, Simli, D-ID, Synthesia, bitHuman | Reasons in §3. The most important: **Decart no longer serves an avatar or lip-sync model.** It retired *Live Avatar* and *LipSync Live* in May 2026. |
@@ -111,35 +111,49 @@ Legend: **V** = vendor claim, **M** = measured by a third party (Anam's Oct 16, 
 - **Audio route.** The agent's audio output goes to the avatar worker through LiveKit's `DataStreamAudioOutput` (a ByteStream of PCM). The worker publishes **audio and video together**, so lip sync is guaranteed by the vendor rather than by us. Never publish TTS audio directly to the room in parallel; it will drift from the video.
 - **Vendor abstraction.** Write a small `SantaAvatar` factory that returns a Tavus, Anam or HeyGen `AvatarSession` based on a per-session routing decision (feature flag + health + capacity). All three are LiveKit plugins with the same `AvatarSession.start(session, room)` shape.
 
-### 4.2 Building the Santa character
+### 4.2 Building the Santa character (fully generated, no actor, no set)
 
-**Recommendation: hire a professional bearded Santa performer, film him once in a built workshop set, and train every vendor's face from that one master footage. Back it with a fully synthetic Santa image as an emergency path.**
+**Decision (updated Nov 5): Santa is 100% AI-generated. No hired performer, no physical set, no shoot.** We generate the face and the workshop scene ourselves, then feed that to the avatar vendors. We own the asset outright, and there is no performer contract.
 
 | Option | Pros | Cons | Verdict |
 |---|---|---|---|
-| **A. Licensed real Santa actor (natural beard)** | The most photoreal result. A real beard moves naturally, which generative models handle better than a costume beard. One footage set feeds Tavus, Anam and HeyGen. Clear consent chain | Requires a digital-replica contract, a shoot day and a fee | **Primary** |
-| B. Fully synthetic Santa (AI-generated still image → image-to-face) | Fast (Tavus 4.5 previews in about 1 min); no performer rights | Vendors' consent/subject rules for synthetic people are **unaddressed (U)**. Less natural motion from a single image. Risk of uncanny beard texture | **Emergency backup only** |
-| C. 3D MetaHuman Santa | Full control | Months of work; beard and groom realism is hard; one GPU per call | Rejected for 2026 |
+| **A. Generated still image → vendor image path** | Hours, not days. No performer rights. Tavus 4.5 previews in about 1 min (tuning takes a few hours); HeyGen and Anam also take a single image. Background is baked into the image | Motion comes only from the model. Beard texture may look uncanny. Vendor rules for synthetic subjects are **unverified (U)** | **Primary** |
+| **B. Generated reference video → vendor video path** | Image-to-video gives the vendor real head motion, blinks and listening behaviour to learn from, still with no actor | Needs about 2 min of footage that is consistent frame to frame. Vendors may still ask for a "consent clip", which a synthetic person cannot give (**U**) | **Upgrade, if A looks stiff in the bake-off** |
+| C. Hired actor + workshop set | Most natural beard motion | Cost, contract, scheduling | **Dropped** |
+| D. 3D MetaHuman Santa | Full control | Months of work; one GPU per call | Rejected for 2026 |
 
-**Shoot spec (week of Nov 9)**
+**Asset pipeline (Nov 6–8)**
 
-- **Performer.** A real, full white beard (no glued beard: costume edges flicker in diffusion output). Not a recognisable celebrity, because Tavus rejects "obvious public figures". Adult performer only; vendors reject subjects under 18.
-- **Framing.** Chest-up or waist-up, centered, face fully visible, beard not covering the mouth. Mustache trimmed so the upper lip is visible: lip-sync legibility matters for kids. *Risk:* the Phoenix-4 rules prohibit a "dense beard over the neck"; **Phoenix-4.5 does not list that restriction, but test it on day 1.**
-- **Set.** A static, lit North Pole workshop behind him: a warm fireplace glow *without* visible flicker, a tree, toys. With Tavus Phoenix-4.5, green-screen background replacement is **not available**, so the background in the footage *is* the background. Keep it static. A moving fire or twinkle lights would freeze or warp.
-- **Footage.**
-  - Record about 2–4 minutes per vendor spec. Use HeyGen's structure: 15 s listening, 90 s talking, 15 s listening. Add extra *listening* takes: gentle nods, warm smiles, a "hmm!" lean-in, a twinkle in the eye. These teach the models Santa's idle and listening behaviour.
-  - Record **one vertical (9:16) and one horizontal (16:9) take**: mobile portrait matters, and Anam supports 768×1152 portrait.
-  - Record a separate **consent statement** clip; Tavus and HeyGen require one.
-- **Voice.** The avatar voice is our TTS Santa voice, which is a separate decision. If we clone the same performer's voice, the consent contract must cover voice too.
-- **Client-side scene dressing** (adds no latency): a CSS/WebGL overlay with gentle falling snow, a frosted window frame, a "Santa is listening…" twinkle indicator and a name banner. This brings the scene to life without asking the avatar model to animate the background.
+1. **Generate the hero still.**
+   - Use a top photoreal image model; generate 50–100 candidates.
+   - Pick one by parent-panel vote; that one face is "our Santa" forever.
+   - Lock the seed and prompt, and keep the source files: this is our IP.
+   - Spec:
+     - chest-up framing, face centered and lit warmly;
+     - full white beard, with the mustache trimmed so the **lips are clearly visible** (lip-sync legibility matters for kids);
+     - mouth closed or neutral, eyes to camera;
+     - no hands near the face.
+   - **Not** resembling any real person or celebrity: vendors reject public figures, and we avoid likeness claims.
+2. **Background baked in.**
+   - The workshop (fireplace glow, tree, toys) is part of the generated image.
+   - Tavus Phoenix-4.5 can't swap backgrounds, so the image *is* the scene.
+   - Keep it static; moving fire or lights warp.
+3. **Two crops:** one vertical 9:16 (mobile, Anam 768×1152) and one horizontal 16:9.
+4. **Optional reference video (option B).**
+   - Animate the hero still with an image-to-video model into about 2 minutes, following HeyGen's structure: 15 s listening, 90 s talking, 15 s listening.
+   - Add extra *listening* clips: nods, warm smiles, a "hmm!" lean-in.
+   - Reject any clip where the face or beard drifts from the still.
+5. **Train on all three vendors from the same asset**, so failover shows the same Santa.
+6. **Client-side scene dressing** (adds no latency): CSS/WebGL falling snow, a frosted window frame, a "Santa is listening…" indicator and a name banner.
 
-**Legal and consent for the actor** (talk to counsel before the shoot)
-
-- Sign a written **digital-replica licence**. It should describe the specific intended uses (interactive AI Santa conversations with children, the brand, the term, territories), give compensation and a renewal path, and require the performer to be represented by a lawyer or union. That representation requirement comes from California AB 2602, which makes vaguely described replica terms unenforceable. New York has a similar 2024 law.
-- If the performer is SAG-AFTRA, the 2026 replica terms (for contracts from 2026-07-01) require written consent.
-- Track the **federal NO FAKES Act**. The 2026 bill (S. 4591 / H.R. 8915) was reported out of Senate Judiciary on 2026-06-18 and has not been enacted as of Oct 2026. Draft the contract to satisfy it anyway.
-- **Exclusivity.** The performer must not appear as Santa for any competing AI product, and we need the right to *retire* the face. Include a morality clause and a takedown process.
-- **Vendor terms.** Each vendor (Tavus, HeyGen, Anam) requires the subject's explicit consent clip and keeps rights to it. Get Tavus to confirm in writing that a non-celebrity actor playing Santa (a public-domain folk character) is not rejected as a "copyrighted character" or "public figure" *(U)*.
+**Consent and rights for a synthetic Santa**
+- No performer means no AB 2602 replica contract, no SAG-AFTRA terms and no exclusivity clause.
+- **Open questions for vendors (ask Nov 6, in writing):**
+  - Do they accept a fully synthetic face?
+  - What replaces the subject-consent clip?
+  - Is "Santa" treated as a copyrighted character? He's a public-domain folk figure, so it shouldn't be (**U**).
+- Check that the image model's licence grants us commercial ownership of the output.
+- **Disclosure:** tell parents Santa is an AI-generated character. The same applies to marketing videos made with the avatar.
 
 ### 4.3 Listening state behaviour
 
@@ -225,7 +239,7 @@ Legend: **V** = vendor claim, **M** = measured by a third party (Anam's Oct 16, 
 
 ## 7. Bake-off plan (Nov 6 – Nov 13)
 
-1. **Day 1–2.** Create test faces of a stand-in bearded performer (or a stock Santa-like face) on Tavus 4.5 Pro, Anam Cara-4.1 and HeyGen LiveAvatar. Wire all three into one LiveKit agent with a vendor flag.
+1. **Day 1–2.** Create test faces from the generated hero Santa still (§4.2) on Tavus 4.5 Pro, Anam Cara-4.1 and HeyGen LiveAvatar. Wire all three into one LiveKit agent with a vendor flag.
 2. **Day 2–4.** Run 300+ scripted turns per vendor from US-East and US-West, on iPhone Safari over LTE and Wi-Fi and on a laptop with Chrome. Measure:
    - glass-to-glass turn latency (p50 and p95);
    - avatar-stage latency (LiveKit avatar metrics);
@@ -236,7 +250,7 @@ Legend: **V** = vendor claim, **M** = measured by a third party (Anam's Oct 16, 
 3. **Day 4–5.** Show blinded clips to about 20 parents, ideally with kids, and rate realism, warmth, beard quality, listening liveliness and creepiness. Kids are the toughest critics of the uncanny valley.
 4. **Day 5.** Ask vendors for written answers on: reserved concurrency for Dec 20–26, data retention of our Santa audio, use of the data for training (we opt out), child-audience acceptability, and portrait support.
 5. **Decision on Nov 14.** Primary = the best realism among vendors that meet the p95 avatar-stage limit of 250 ms and the 200 ms interruption limit. Secondary = the next best.
-6. **Nov 9–12.** Real Santa shoot. **Nov 15–20.** Train production faces on two or three vendors.
+6. **Nov 6–8.** Generate the Santa asset (§4.2), with the optional reference video if the image path looks stiff. **Nov 15–20.** Train production faces on two or three vendors.
    - Tavus 4.5 tuning takes a few hours.
    - HeyGen and Anam turnaround: *U*. Allow for training failures (Tavus faces cannot be re-tuned after a failure: a new face is required).
 7. **Nov 20 – Dec 1.** Integration, load test, safety red-team. **Code freeze Dec 3.**
@@ -248,7 +262,7 @@ Legend: **V** = vendor claim, **M** = measured by a third party (Anam's Oct 16, 
 - **Data minimization.** With our agent in the middle, vendors receive only Santa's synthetic audio and return Santa's video. **Do not enable vendor perception features** (Tavus Raven, D-ID's camera layer) that would send the child's camera feed to a vendor. If the child's camera is on at all, it should be optional and processed only by us, or not at all.
 - **COPPA.** The amended rule is fully in effect (compliance date 2026-04-22). It bars using children's data to train AI as a condition of service. Get each vendor to agree in writing that no child data reaches it; if any does, it must not be retained or used for training.
 - **Vendor terms.** Tavus's ToS make *us* responsible for use by minors. Its AUP has zero tolerance for content that exploits or harms minors, which our use does not do, but **get written confirmation from each vendor that a child-directed, parent-consented product is permitted** *(U for all vendors)*.
-- **Disclosure.** Tell parents clearly that Santa is an AI character played by a digital likeness. Some jurisdictions now require synthetic-performer disclosure in *advertising* (NY from 2026-06-09; CA SB 1050 from 2027-01-01, *U*). Apply the same disclosure to marketing videos made with the avatar.
+- **Disclosure.** Tell parents clearly that Santa is an AI-generated character. Some jurisdictions now require synthetic-performer disclosure in *advertising* (NY from 2026-06-09; CA SB 1050 from 2027-01-01, *U*). Apply the same disclosure to marketing videos made with the avatar.
 - **Vendor-side moderation.** Some vendors filter content in their own pipeline. Confirm that Santa saying words like "naughty", "chimney" or "sneak" does not trigger vendor-side filters that would mute the avatar (*U*).
 
 ---
@@ -258,14 +272,14 @@ Legend: **V** = vendor claim, **M** = measured by a third party (Anam's Oct 16, 
 | # | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
 | 1 | Vendor capacity collapses on Dec 24 (GPU shortage, an outage) | Med | Critical | Reserved concurrency in writing; three vendors behind LiveKit; booked time slots; Elf waiting room |
-| 2 | The beard renders badly (smearing, mouth hidden, flicker) | Med | High | Test on Day 1; trim the mustache; a real beard, not a costume one; try image and video training paths |
+| 2 | The beard renders badly (smearing, mouth hidden, flicker) | Med | High | Test on day 1; generate candidates with visible lips; try both the image and the generated-video paths |
 | 3 | Real turn latency is far above vendor claims (e.g., Tavus's 5 s time to first frame suggests heavier infrastructure) | Med | High | Bake-off with glass-to-glass measurement; backchannel cues; pick the vendor on measured p95 |
 | 4 | Interruption feels sluggish because the vendor buffers too much audio | Med | Med | Clause-level TTS chunks; measure the clear_buffer → stop time; choose the vendor on it |
 | 5 | Vendor ships a model change in December (behaviour or quality drift) | Med | High | Pin model versions (e.g., Phoenix-4.5 Pro face IDs); contractual change freeze Dec 1–Jan 2 |
 | 6 | Vendor discontinues a product (Decart retired its avatar models 2026-05) | Low-Med | High | Multi-vendor abstraction; keep the master Santa footage under our own ownership |
 | 7 | Echo: Santa's voice from the phone speaker triggers barge-in | High (on phones) | Med | Browser AEC; a minimum barge-in duration; tests on device |
-| 8 | A vendor refuses the Santa likeness or the child audience under its policy | Low-Med | High | Ask in writing this week; synthetic-Santa backup (with consent rules for synthetic subjects to be confirmed) |
-| 9 | Actor consent or contract gaps (AB 2602, NY, SAG-AFTRA, NO FAKES) | Low | High | Counsel-reviewed replica licence; performer represented; specific uses |
+| 8 | A vendor refuses the Santa likeness or the child audience under its policy | Low-Med | High | Ask in writing on Nov 6; test all three vendors on day 1 |
+| 9 | A vendor rejects a fully synthetic face, or demands a consent clip that a synthetic person can't give | Med | High | Ask in writing on Nov 6. Test all three vendors on the image path on day 1. Keep the reference-video option ready |
 | 10 | Mobile autoplay or Low Power Mode breaks the first impression | Med | Med | A "Tap to call Santa" gesture; QA matrix of iOS 17–19 and Android 13–16 |
 | 11 | Santa looks different across vendors | Med | Low-Med | Same master footage; pin each family to one vendor |
 | 12 | Uncanny valley scares younger kids (3–4) | Low-Med | High | Parent and kid panel testing; warm lighting; mid-shot framing (not an extreme close-up); a softer emotion palette |
@@ -274,7 +288,7 @@ Legend: **V** = vendor claim, **M** = measured by a third party (Anam's Oct 16, 
 
 ## 10. Open questions / unverified items
 
-- Tavus enterprise concurrency ceiling and regions for Dec 2026; whether Phoenix-4.5 Pro supports portrait output; stop latency on `clear_buffer`; acceptance of a Santa-costumed actor (**U**).
+- Tavus enterprise concurrency ceiling and regions for Dec 2026; whether Phoenix-4.5 Pro supports portrait output; stop latency on `clear_buffer`; acceptance of a fully synthetic Santa face (**U**).
 - Anam's published concurrency limits, pricing tiers, custom-avatar input requirements and child-audience policy (**U**).
 - HeyGen LiveAvatar's transport and real measured turn latency (vendor says under 300 ms to first frame; Anam measured a 3.66 s median connect) (**U**).
 - Decart Lucy 2.6 latency and fps under load, and whether any successor audio-driven avatar model is planned (**U**). None was found in the changelog through Oct 2026.

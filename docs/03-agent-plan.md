@@ -14,7 +14,7 @@ Legend: **[V]** = vendor-stated figure, not independently verified. **[U]** = un
 - **Default stack:**
   - **STT and turn detection:** Deepgram **Flux**, with AssemblyAI **Universal-3.6 Pro Streaming** or Cartesia **Ink-2** as hot standby.
   - **LLM:** **Claude Haiku 5.5** (`claude-haiku-5-5`) with thinking off, prompt-cached. The same model on Bedrock or Vertex is the failover, with a Gemini Flash-class model as a third option.
-  - **TTS:** **ElevenLabs `eleven_v4_turbo`**, falling back to `eleven_flash_v2_5`, using a **Professional Voice Clone of a hired Santa voice actor**. A twin clone of the same actor runs on **Cartesia Sonic-3.6** as the failover.
+  - **TTS:** **ElevenLabs `eleven_v4_turbo`**, falling back to `eleven_flash_v2_5`, using a **Santa voice we generate ourselves with ElevenLabs Voice Design** (text prompt → voice; no actor). A matched voice on **Cartesia Sonic-3.6** (designed or cloned from our own generated samples, subject to ToS check) is the failover.
 - **Why not S2S:**
   1. We cannot reliably get a custom Santa voice.
      - OpenAI's prompt-designed voices work only in GPT-Live and explicitly forbid imitating fictional characters.
@@ -40,25 +40,25 @@ Legend: **[V]** = vendor-stated figure, not independently verified. **[U]** = un
 | **OpenAI Realtime API** | `gpt-realtime-2.1`, `gpt-realtime-2.1-mini` (2026-07-06) | Slower than GPT-Live per OpenAI (1.41 s turn-taking) [V]. p95 cut by at least 25% via caching [V] | Built-in voices. Recorded custom voices for eligible customers only; prompt-to-voice is **not** supported here | Partially, in text-output mode only (that becomes a half-cascade) | Under-13 personal data requires **Zero Data Retention (ZDR)** per OpenAI's under-18 guidance |
 | **Google Gemini Live** | `gemini-3.8-live` (GA), plus an "Extended Thinking" variant | "Sub-second" [V]. Forum reports of latency creeping up over long sessions on 2.5-era models [U] | 30 prebuilt voices (Gacrux "Mature", Algenib "Gravelly", Sulafat "Warm"…). `replicated_voice_config` clones from a 10-20 s sample, **limited to select customers** | No pre-speech gate; output transcription streams alongside the audio | "Polite" barge-in. Proactive audio filters background speech. Async (non-blocking) tool calls. Also offers native Live Avatar video output (interesting, but the avatar is another team's) |
 | **ElevenLabs Agents (managed)** | `eleven_realtime_v1_mini/max`, or a cascade with a custom LLM | "Sub-500 ms" marketing [V] | Yes, PVC/IVC/voice design | Platform guardrails "enforced in real time" (details opaque) | Viable as a **fallback platform**, less control than our own orchestration |
-| **Cascade (ours)** | Flux / U-3.6 Pro / Ink-2 / Scribe v2 RT, then Haiku 5.5 / Gemini Flash / Groq or Cerebras-hosted OSS, then ElevenLabs v4 Turbo / Flash v2.5 / Sonic-3.6 | Sum of stages, about 0.75 to 1.1 s p50 (see §2) | **Full control**: hire a voice actor, clone them, keep the voice consistent across vendors | **Yes**: every clause can be gated before TTS | Most moving parts, but every part is swappable |
+| **Cascade (ours)** | Flux / U-3.6 Pro / Ink-2 / Scribe v2 RT, then Haiku 5.5 / Gemini Flash / Groq or Cerebras-hosted OSS, then ElevenLabs v4 Turbo / Flash v2.5 / Sonic-3.6 | Sum of stages, about 0.75 to 1.1 s p50 (see §2) | **Full control**: design our own Santa voice, keep it consistent across vendors | **Yes**: every clause can be gated before TTS | Most moving parts, but every part is swappable |
 
 ### 1.2 Head-to-head on the criteria that matter
 
 | Criterion | Cascade | S2S (GPT-Live / Gemini Live) | Winner |
 |---|---|---|---|
 | **Time to first audio** | Flux end-of-turn (EOT) about 260 ms p50 [V], plus LLM time-to-first-token (TTFT) about 300-600 ms (Haiku-class; 2026 benchmarks put Claude 4.5 Haiku at 0.84 s and Gemini 3.5 Flash at 0.90 s on large prompts; Cerebras/Groq at 0.1-0.5 s) [U], plus TTS 100-200 ms (ElevenLabs about 100 ms median model-only [V]; Coval measured Flash v2.5 at 185 ms perceived [U]) | GPT-Live 0.80 s [V]; Gemini "sub-second" [V] | **S2S slightly**, but the gap closes with eager-EOT speculation and request hedging |
-| **Custom, consistent Santa voice** | Hire an actor, run a PVC on ElevenLabs and a twin on Cartesia. The same voice every call, with emotion (laugh, "ho ho ho") | OpenAI forbids fictional-character imitation in prompt-to-voice, and recorded voices are sales-gated. Gemini replication is select-customers only. Prebuilt voices are not Santa | **Cascade, decisively** |
+| **Custom, consistent Santa voice** | Design our own voice (ElevenLabs Voice Design), with a matched Cartesia twin. The same voice every call, with emotion (laugh, "ho ho ho") | OpenAI forbids fictional-character imitation in prompt-to-voice, and recorded voices are sales-gated. Gemini replication is select-customers only. Prebuilt voices are not Santa | **Cascade, decisively** |
 | **Feeding the avatar stage** | We hand the avatar PCM frames plus word/sentence timestamps, and can flush on barge-in | Also possible (audio comes out as PCM), but timestamps and truncation are coarser | Cascade |
 | **Children's speech** | Text-only ASR on kids is weak. Whisper-class WER is 70-76% for preschoolers and 13-17% for grades 3-5 ([DrivenData](https://drivendata.co/blog/child-asr-benchmarking)). No vendor publishes child WER. Keyterm prompting (child's name, pets, reindeer names, toys) helps | Audio-native models *may* recover meaning from mumbled audio better, but **no published evidence for children** [U] | **Unknown, so we must test in week 1** (§1.5) |
 | **Turn-taking / barge-in** | Flux has StartOfTurn, EagerEndOfTurn, TurnResumed and EndOfTurn events. LiveKit Turn Detector v1 is audio-native (543 ms at 5% false cutoff on English) [V]. Tunable for slow child speech | Built-in full-duplex is genuinely better at backchannels and overlaps [V], but not tunable for kids | S2S on naturalness; **cascade on tunability** |
 | **Guardrail-ability** | Inspect every clause before TTS; deterministic gift-promise blocks; swap in canned safe lines | Audio is already being spoken while text is still arriving. GPT-Live's voice layer improvises. The only remedy is cutting audio mid-word | **Cascade, decisively** (this is the deciding factor for kids) |
 | **Tool calling** | Native LLM tools, but we avoid tools on the hot path (context is preloaded) | GPT-Live tool-call accuracy 87% [V]; Gemini async tools | Tie |
-| **Vendor policy for under-13s** | Anthropic: AI disclosure, COPPA compliance, safety prompt, audits. OpenAI (if used anywhere): ZDR required for under-13 personal data | OpenAI: ZDR required; voice creation is not ZDR-compatible (that applies to the adult actor's voice, so it is fine) | Equal; both are manageable |
+| **Vendor policy for under-13s** | Anthropic: AI disclosure, COPPA compliance, safety prompt, audits. OpenAI (if used anywhere): ZDR required for under-13 personal data | OpenAI: ZDR required; voice creation is not ZDR-compatible (n/a: our voice is designed, not created from a real person) | Equal; both are manageable |
 | **Resilience** | Every stage has a hot alternate | Single vendor = single point of failure | Cascade |
 
 ### 1.3 Recommendation
 
-**Build the streaming cascade with sentence-level guardrails, using our own cloned Santa voice.** Three arguments decide it:
+**Build the streaming cascade with sentence-level guardrails, using our own generated Santa voice.** Three arguments decide it:
 
 1. **The voice is the product.** A hyper-realistic Santa needs a distinctive, warm, consistent voice that matches the avatar. S2S vendors either forbid character voices outright (OpenAI prompt-to-voice) or gate custom voices behind sales or allowlists (OpenAI recorded voices, Gemini replicated voice). We cannot bet a December launch on an allowlist.
 2. **Guardrails must act before audio leaves.** With 3 to 10 year-olds, "we cut the audio after it started saying the bad thing" is not acceptable. Only a cascade lets us gate text per clause.
@@ -80,7 +80,7 @@ Legend: **[V]** = vendor-stated figure, not independently verified. **[U]** = un
   - (a) a custom Santa voice is confirmed in writing for our account;
   - (b) our cascade cannot get below about 1.3 s p50 after tuning;
   - (c) legal accepts post-hoc audio cut-off as the output guardrail. With (c) unlikely, we do not expect to take this path for launch.
-- **ElevenLabs Agents (managed cascade):** an emergency fallback platform if our orchestration layer itself fails (§5). It reuses the same PVC voice.
+- **ElevenLabs Agents (managed cascade):** an emergency fallback platform if our orchestration layer itself fails (§5). It reuses the same designed Santa voice.
 
 ### 1.5 Week-1 evaluation (must run before locking vendors)
 
@@ -165,7 +165,7 @@ flowchart LR
       ORCH --> LLM[Claude Haiku 5.5<br/>hedged: API + Bedrock]
       LLM -->|token stream| CL[Clause chunker]
       CL --> OG[Output gate<br/>rules + local classifier<br/>async LLM judge]
-      OG -->|approved clause| TTS[ElevenLabs v4 Turbo<br/>Santa PVC]
+      OG -->|approved clause| TTS[ElevenLabs v4 Turbo<br/>designed Santa voice]
       OG -->|blocked| SAFE[Safe-line library<br/>pre-rendered]
       TTS --> AUD[Audio out + word timestamps]
       SAFE --> AUD
@@ -179,7 +179,7 @@ flowchart LR
   end
   STT -. failover .-> STT2[AssemblyAI U-3.6 Pro / Ink-2]
   LLM -. failover .-> LLM2[Gemini Flash-class]
-  TTS -. failover .-> TTS2[Cartesia Sonic-3.6<br/>twin Santa clone]
+  TTS -. failover .-> TTS2[Cartesia Sonic-3.6<br/>matched Santa voice]
 ```
 
 ### 3.2 Inputs from parents (booking form, then a structured profile)
@@ -449,9 +449,9 @@ Delivered in the app, plus an email notification without content. Retention per 
 | STT | Deepgram Flux | AssemblyAI U-3.6 Pro Streaming (or Cartesia Ink-2) with a VAD/turn-detector wrapper | Socket error, no transcript for more than 2 s while speech is detected, or p95 EOT above 1.5 s over 1 min | < 1 s (open the new socket; replay the last 2 s of buffered audio) | Keep the standby socket pre-opened on every call |
 | LLM | Haiku 5.5 on Anthropic API **and** Bedrock (hedged) | Haiku 5.5 on Vertex, then a Gemini Flash-class model with an adapted prompt | Both hedges fail or TTFT above 1.5 s | Per-request | Prompts are regression-tested on each fallback model |
 | Output gate | Local classifier | Gate A rules only plus a stricter allowlist mode (shorter, more scripted turns) | Classifier down | Instant | Never fall back to "no gate" |
-| TTS | ElevenLabs `eleven_v4_turbo` (then `eleven_flash_v2_5`) with the Santa PVC | **Cartesia Sonic-3.6 with a twin PVC from the same actor recordings** | Socket error or time to first audio above 800 ms | Per-clause | Blind A/B test of the twin before launch; tune to match pitch, pace and warmth |
+| TTS | ElevenLabs `eleven_v4_turbo` (then `eleven_flash_v2_5`) with our designed Santa voice | **Cartesia Sonic-3.6 with a matched Santa voice** | Socket error or time to first audio above 800 ms | Per-clause | Blind A/B test of the twin before launch; tune to match pitch, pace and warmth |
 | Avatar | (other team) | **Audio-only "Snow Globe" mode:** a pre-rendered looping Santa animation or illustrated scene with an audio-reactive glow; Santa says "the North Pole camera is frozen — but I can still hear you!" | Avatar track missing for more than 3 s | ~1 s | Our pipeline keeps running unchanged. Audio routes directly to the room instead of via the avatar |
-| Whole agent | Our LiveKit agent | **ElevenLabs Agents** with the same PVC and a minimal prompt (emergency, degraded guardrails, so last resort only, or skip) | Worker crash loop | New calls | Product decision: we would rather **reschedule than run degraded guardrails** |
+| Whole agent | Our LiveKit agent | **ElevenLabs Agents** with the same designed voice and a minimal prompt (emergency, degraded guardrails, so last resort only, or skip) | Worker crash loop | New calls | Product decision: we would rather **reschedule than run degraded guardrails** |
 | Total outage | — | A pre-rendered personalized video message from Santa (built from the profile at booking, using the same TTS and avatar, rendered offline) plus automatic reschedule and refund | Call cannot connect within 60 s | — | Kids still get something magical |
 
 ### 5.2 Operational
@@ -470,7 +470,7 @@ Delivered in the app, plus an email notification without content. Retention per 
 
 | Week | Deliverables |
 |---|---|
-| **W1 (Nov 5-12)** | Cast and record the Santa voice actor (consent and contract for AI cloning, 1 to 3 h studio audio). ElevenLabs PVC plus Cartesia twin. Child-speech ASR eval (§1.5). LiveKit Agents skeleton with the full cascade. Avatar interface contract with the avatar team (PCM format, clear/interrupt, listening-cue API, region). Legal kickoff on §3.8 and §4.4-4.5 |
+| **W1 (Nov 5-12)** | Generate the Santa voice with ElevenLabs Voice Design (pick by parent-panel vote), then build the matched Cartesia voice. Child-speech ASR eval (§1.5). LiveKit Agents skeleton with the full cascade. Avatar interface contract with the avatar team (PCM format, clear/interrupt, listening-cue API, region). Legal kickoff on §3.8 and §4.4-4.5 |
 | **W2** | Prompt v1 plus orchestrator state machine; silence ladder; multi-kid. Gates A and B, safe-line library rendered. Latency tuning (eager EOT, hedging, caching). Parent monitor UI |
 | **W3** | Red-team at scale; classifier v2; failover drills (pull each vendor); staff-family pilot calls (50+); legal sign-off on disclosure, VPC and retention |
 | **W4 (to ~Dec 3)** | Load test; capacity reservations; runbooks; soft launch to a waitlist; launch |
@@ -484,7 +484,7 @@ Delivered in the app, plus an email notification without content. Retention per 
 3. **AI-disclosure posture with children [L].** It is a product-defining decision; see §3.8.
 4. **Parent as alleged abuser [L].** See §4.5.
 5. **Vendor capacity in December.** Mitigated by reservations and the twin-vendor design.
-6. **Voice-actor rights.** Secure an exclusive license for the Santa voice and AI cloning across ElevenLabs and Cartesia, with a perpetual-use clause for December seasons.
+6. **Voice rights.** Confirm ElevenLabs Voice Design output is ours to use commercially and exclusively, and whether its terms allow cloning those samples onto Cartesia.
 
 ---
 
